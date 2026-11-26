@@ -1,4 +1,4 @@
-name: Installer source checks
+name: Independent source checks
 on:
   push:
     branches: [main]
@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 jobs:
-  installer:
+  source:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -17,4 +17,5 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: python3 -m unittest discover -s tests -p 'test_install_data_pack.py' -v
+      - run: python3 tools/public_source_gate.py
+      - run: python3 -m unittest discover -s tests -p 'test_verify_user_archive.py' -v
