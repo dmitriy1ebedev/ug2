@@ -58,7 +58,7 @@ def verify(pack):
                 raise ArchiveError("Invalid entry")
             name = safe_path(ent["path"])
             key = name.casefold()
-            if key == MANIFEST or key in seen or key in parents:
+            if key == MANIFEST or key.startswith(MANIFEST + "/") or key in seen or key in parents:
                 raise ArchiveError("Duplicate or reserved path")
             for parent in PurePosixPath(name).parents:
                 if str(parent) == ".":

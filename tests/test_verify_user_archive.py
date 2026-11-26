@@ -46,6 +46,11 @@ class ArchiveTests(unittest.TestCase):
             with self.subTest(names=names), self.assertRaises(ArchiveError):
                 self.check([self.entry(n) for n in names], [(n, b"test") for n in names])
 
+    def test_manifest_parent_refused(self):
+        name = "MANIFEST.JSON/nested.txt"
+        with self.assertRaises(ArchiveError):
+            self.check([self.entry(name)], [(name, b"test")])
+
     def test_case_collision(self):
         with self.assertRaises(ArchiveError):
             self.check([self.entry("A"), self.entry("a")], [("A", b"test"), ("a", b"test")])
