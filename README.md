@@ -9,6 +9,10 @@ UG2 is a project for a portable, local browser-based game runtime targeting Astr
 
 ## Distribution and status
 
-This is the public source repository, currently being prepared for the initial source-only publication. Original game assets, executable binaries, game-derived WASM, saves and private development history are not included. Users must supply their own game data. UG2 is an independent project and is not an official game release.
+This is the public source repository, currently receiving its initial source-only publication. Original game assets, executable binaries, game-derived WASM, saves and private development history are not included. Users must supply their own game data. UG2 is an independent project and is not an official game release.
 
 Physical gameplay acceptance on Astra Linux and Windows, and frame-pacing verification on target GPUs, are still pending. Source-only checks do not establish playable-game compatibility.
+
+## Initial source snapshot
+
+The first reviewed subset contains the private data pack installer and its synthetic regression tests, from source revision `e6a9ef3c5092ace5a18cebe3d82e16047ccdf42c`. Only synthetic fixtures are used by CI; the launcher and full source suite are not yet published here. Run `python3 -m unittest discover -s tests -p 'test_install_data_pack.py' -v` locally. This is not a playable release. See [upstream license notice](docs/UPSTREAM-LICENSE.txt).
