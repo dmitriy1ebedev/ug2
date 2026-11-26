@@ -3,6 +3,8 @@ import subprocess
 
 ALLOWED = {
     "README.md",
+    "LICENSE",
+    ".gitverse/workflows/ci.yml",
     "docs/UPSTREAM-LICENSE.txt",
     "docs/PUBLIC-SCOPE.md",
     "tools/verify_user_archive.py",

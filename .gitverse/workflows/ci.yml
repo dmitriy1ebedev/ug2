@@ -1,0 +1,20 @@
+name: Independent source checks
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python3 tools/public_source_gate.py
+      - run: python3 -m unittest discover -s tests -p 'test_verify_user_archive.py' -v

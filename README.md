@@ -11,3 +11,9 @@ Users must supply lawfully obtained data. UG2 is not affiliated with or endorsed
 - `python3 -m unittest discover -s tests -v`
 
 Further independent components will be published after source and license review. Game-specific runtime publication remains on hold.
+
+## License and mirrors
+
+The independently authored public UG2 source is distributed under the [MIT License](LICENSE) (SPDX: MIT). Third-party notices remain applicable. This does not license the game, its assets, trademarks, or game-derived artifacts. See [public source boundary](docs/PUBLIC-SCOPE.md).
+
+GitHub is the primary public source; GitVerse is intended to mirror the same reviewed public snapshot. The internal development repository is not a public mirror.

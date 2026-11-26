@@ -6,6 +6,6 @@ Public development is limited to independently implemented components and review
 
 The current independent archive verifier checks a generic integrity manifest; it does not identify, run or transform a game executable. Integrity is not a determination of licensing or provenance. Tests use synthetic text only. The public snapshot is not a playable game release.
 
-Development references the archived MIT version of th0mk/nfsu2-web at b60e876aef09e7328ecff5a85a97bf2ad834b67f. See [upstream notice](UPSTREAM-LICENSE.txt). Upstream licensing does not grant rights to the game. No license is granted here beyond applicable third-party notices and any expressly stated terms.
+Development references the archived MIT version of th0mk/nfsu2-web at b60e876aef09e7328ecff5a85a97bf2ad834b67f. See [upstream notice](UPSTREAM-LICENSE.txt). Upstream licensing does not grant rights to the game. The independently authored code in the reviewed public snapshot is licensed under MIT (see the root LICENSE). Third-party components remain subject to their own licenses and notices. No rights to the original game, trademarks, assets, derived game code or private/internal components are granted by the UG2 license.
 
 Legal review remains open for game-specific recompilation, original retail input provenance, technical protection measures, all imported components and historical public refs/artifacts. Do not publish game-specific runtime tooling until that review clears it. Report specific rights concerns through repository issues without posting proprietary material.
