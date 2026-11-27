@@ -1,4 +1,6 @@
+import contextlib
 import hashlib
+import io
 import json
 import sys
 import tempfile
@@ -7,7 +9,7 @@ import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from verify_user_archive import ArchiveError, verify
+from verify_user_archive import ArchiveError, main, parse_manifest_json, verify
 
 
 class ArchiveTests(unittest.TestCase):
@@ -37,7 +39,7 @@ class ArchiveTests(unittest.TestCase):
             self.check([self.entry("a.txt")], [("a.txt", b"test")], ("extra.txt", b"x"))
 
     def test_unsafe_paths(self):
-        for name in ("../a", "/a", "CON.txt", "a/../b", "a. /b", "a\\b"):
+        for name in ("../a", "/a", "CON.txt", "CON .txt", "a/../b", "a. /b", "a\\b"):
             with self.subTest(name=name), self.assertRaises(ArchiveError):
                 self.check([self.entry(name)], [(name, b"test")])
 
@@ -54,3 +56,38 @@ class ArchiveTests(unittest.TestCase):
     def test_case_collision(self):
         with self.assertRaises(ArchiveError):
             self.check([self.entry("A"), self.entry("a")], [("A", b"test"), ("a", b"test")])
+
+    def test_duplicate_json_keys(self):
+        for raw in (b'{"schema":"ug2-user-data/v1","schema":"other","files":[]}',
+                    b'{"files":[{"path":"a","path":"b"}]}'):
+            with self.subTest(raw=raw), self.assertRaisesRegex(ArchiveError, "Duplicate JSON key"):
+                parse_manifest_json(raw)
+
+    def test_invalid_json(self):
+        with self.assertRaisesRegex(ArchiveError, "Invalid manifest JSON"):
+            parse_manifest_json(b'{broken')
+
+    def test_unknown_manifest_field(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "fixture.zip"
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("manifest.json", json.dumps({
+                    "schema": "ug2-user-data/v1", "files": [self.entry("a")], "unknown": True}))
+                archive.writestr("a", b"test")
+            with self.assertRaisesRegex(ArchiveError, "Unsupported schema"):
+                verify(path)
+
+    def test_cli_exit_codes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "fixture.zip"
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("manifest.json", json.dumps({
+                    "schema": "ug2-user-data/v1", "files": [self.entry("a")]}))
+                archive.writestr("a", b"test")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(main([str(path)]), 0)
+            self.assertEqual(json.loads(out.getvalue()), {"verified_files": 1, "bytes": 4})
+            path.write_bytes(b"not a zip")
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(main([str(path)]), 2)

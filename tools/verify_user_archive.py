@@ -3,10 +3,12 @@
 No game-specific input, executable recognition, extraction or execution.
 A matching digest establishes integrity, not authorship or license.
 """
+import argparse
 import hashlib
 import json
 import re
 import stat
+import sys
 import zipfile
 from pathlib import PurePosixPath
 
@@ -23,12 +25,28 @@ def safe_path(path):
     if not isinstance(path, str) or not path or len(path) > 1024 or "\\" in path:
         raise ArchiveError("Unsafe path")
     for part in path.split("/"):
-        stem = part.split(".", 1)[0].upper()
+        stem = part.split(".", 1)[0].rstrip(" ").upper()
         if (not part or part in (".", "..") or part.endswith((".", " "))
                 or any(ord(c) < 32 or c in '<>:"|?*' for c in part)
                 or re.fullmatch(r"CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|(?:COM|LPT)[1-9\u00b9\u00b2\u00b3]", stem)):
             raise ArchiveError("Unsafe path component")
     return path
+
+
+def parse_manifest_json(raw):
+    """Reject duplicate object keys before interpreting a manifest."""
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ArchiveError("Duplicate JSON key: " + key)
+            result[key] = value
+        return result
+
+    try:
+        return json.loads(raw, object_pairs_hook=unique)
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ArchiveError("Invalid manifest JSON") from exc
 
 
 def verify(pack):
@@ -39,6 +57,8 @@ def verify(pack):
         members, folded = {}, set()
         for info in infos:
             name = safe_path(info.filename)
+            if info.orig_filename != info.filename or info.flag_bits & 1:
+                raise ArchiveError("Truncated or encrypted archive member")
             kind = (info.external_attr >> 16) & 0o170000
             if info.is_dir() or kind not in (0, stat.S_IFREG) or name.casefold() in folded:
                 raise ArchiveError("Nonregular or duplicate member")
@@ -46,8 +66,9 @@ def verify(pack):
             members[name] = info
         if MANIFEST not in members or members[MANIFEST].file_size > 16 * 1024**2:
             raise ArchiveError("Missing or oversized manifest")
-        manifest = json.loads(archive.read(MANIFEST))
-        if not isinstance(manifest, dict) or manifest.get("schema") != "ug2-user-data/v1":
+        manifest = parse_manifest_json(archive.read(MANIFEST))
+        if (not isinstance(manifest, dict) or set(manifest) != {"schema", "files"}
+                or manifest.get("schema") != "ug2-user-data/v1"):
             raise ArchiveError("Unsupported schema")
         files = manifest.get("files")
         if not isinstance(files, list) or not 1 <= len(files) <= MAX_FILES:
@@ -77,12 +98,33 @@ def verify(pack):
             raise ArchiveError("Unmanifested member")
         for ent in files:
             h = hashlib.sha256()
+            size = 0
             with archive.open(ent["path"]) as stream:
                 while True:
                     chunk = stream.read(1024**2)
                     if not chunk:
                         break
+                    size += len(chunk)
+                    if size > ent["bytes"]:
+                        raise ArchiveError("Stream exceeds declared size")
                     h.update(chunk)
-            if h.hexdigest() != ent["sha256"]:
+            if size != ent["bytes"] or h.hexdigest() != ent["sha256"]:
                 raise ArchiveError("Digest mismatch")
     return {"verified_files": len(files), "bytes": total}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("archive")
+    args = parser.parse_args(argv)
+    try:
+        result = verify(args.archive)
+    except (OSError, ValueError, RuntimeError, NotImplementedError, zipfile.BadZipFile) as exc:
+        print("ERROR:", exc, file=sys.stderr)
+        return 2
+    print(json.dumps(result, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
